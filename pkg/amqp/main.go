@@ -2,6 +2,7 @@ package amqp
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -153,7 +154,7 @@ func (c *RPC) Server() (*Server, error) {
 	if err := ch.ExchangeDeclare(c.exchange, "direct", true, false, false, false, nil); err != nil {
 		return nil, err
 	}
-	q, err := ch.QueueDeclare(c.key, true, false, false, false, nil)
+	q, err := ch.QueueDeclare(fmt.Sprintf("%s.%s", c.exchange, c.key), true, false, false, false, nil)
 	if err != nil {
 		return nil, err
 	}
