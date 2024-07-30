@@ -91,7 +91,7 @@ func (c *Fanout) Consumer(name *string) (*Consumer, error) {
 	if name == nil {
 		q, err = ch.QueueDeclare("", false, true, true, false, nil)
 	} else {
-		q, err = ch.QueueDeclare(fmt.Sprintf("%s.%s", c.exchange, *name), false, true, true, false, nil)
+		q, err = ch.QueueDeclare(fmt.Sprintf("%s.%s", c.exchange, *name), true, false, false, false, nil)
 	}
 	if err != nil {
 		return nil, err
