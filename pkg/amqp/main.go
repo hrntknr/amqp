@@ -79,7 +79,7 @@ func (c *Fanout) Publisher() (*Publisher, error) {
 	}, nil
 }
 
-func (c *Fanout) Consumer() (*Consumer, error) {
+func (c *Fanout) Consumer(name *string) (*Consumer, error) {
 	ch, err := c.conn.Channel()
 	if err != nil {
 		return nil, err
@@ -87,7 +87,12 @@ func (c *Fanout) Consumer() (*Consumer, error) {
 	if err := ch.ExchangeDeclare(c.exchange, "fanout", true, false, false, false, nil); err != nil {
 		return nil, err
 	}
-	q, err := ch.QueueDeclare("", false, true, true, false, nil)
+	var q amqp.Queue
+	if name == nil {
+		q, err = ch.QueueDeclare("", false, true, true, false, nil)
+	} else {
+		q, err = ch.QueueDeclare(fmt.Sprintf("%s.%s", c.exchange, *name), false, true, true, false, nil)
+	}
 	if err != nil {
 		return nil, err
 	}
