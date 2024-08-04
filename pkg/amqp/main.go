@@ -3,6 +3,7 @@ package amqp
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -37,6 +38,7 @@ type Caller struct {
 	ch       *amqp.Channel
 	exchange string
 	key      string
+	lock     sync.Mutex
 	chs      map[string]chan Delivery
 	callback string
 }
@@ -146,6 +148,7 @@ func (c *RPC) Caller() (*Caller, error) {
 		ch:       ch,
 		exchange: c.exchange,
 		key:      c.key,
+		lock:     sync.Mutex{},
 		chs:      chs,
 		callback: q.Name,
 	}, nil
@@ -188,7 +191,9 @@ func (c *Caller) Call(ctx context.Context, msg Publishing) (Delivery, error) {
 	msg.CorrelationId = id.String()
 	msg.ReplyTo = c.callback
 	ch := make(chan Delivery)
+	c.lock.Lock()
 	c.chs[msg.CorrelationId] = ch
+	c.lock.Unlock()
 	defer delete(c.chs, msg.CorrelationId)
 	if err := c.ch.Publish(c.exchange, c.key, false, false, amqp.Publishing(msg)); err != nil {
 		return Delivery{}, err
