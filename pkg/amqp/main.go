@@ -18,6 +18,12 @@ type Fanout struct {
 	exchange string
 }
 
+type Topic struct {
+	conn     *amqp.Connection
+	exchange string
+	key      string
+}
+
 type RPC struct {
 	conn     *amqp.Connection
 	exchange string
@@ -62,6 +68,9 @@ func NewClient(url string) (*Client, error) {
 func (c *Client) NewFanout(exchange string) *Fanout {
 	return &Fanout{conn: c.conn, exchange: exchange}
 }
+func (c *Client) NewTopic(exchange string, key string) *Topic {
+	return &Topic{conn: c.conn, exchange: exchange, key: key}
+}
 func (c *Client) NewRPC(exchange string, key string) *RPC {
 	return &RPC{conn: c.conn, exchange: exchange, key: key}
 }
@@ -78,6 +87,21 @@ func (c *Fanout) Publisher() (*Publisher, error) {
 		ch:       ch,
 		exchange: c.exchange,
 		key:      "",
+	}, nil
+}
+
+func (c *Topic) Publisher() (*Publisher, error) {
+	ch, err := c.conn.Channel()
+	if err != nil {
+		return nil, err
+	}
+	if err := ch.ExchangeDeclare(c.exchange, "topic", true, false, false, false, nil); err != nil {
+		return nil, err
+	}
+	return &Publisher{
+		ch:       ch,
+		exchange: c.exchange,
+		key:      c.key,
 	}, nil
 }
 
