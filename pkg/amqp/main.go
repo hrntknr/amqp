@@ -167,6 +167,9 @@ func (c *RPC) Caller() (*Caller, error) {
 				chs <- Delivery(msg)
 			}
 		}
+		for _, ch := range chs {
+			close(ch)
+		}
 	}()
 	return &Caller{
 		ch:       ch,
@@ -225,7 +228,10 @@ func (c *Caller) Call(ctx context.Context, msg Publishing) (Delivery, error) {
 	select {
 	case <-ctx.Done():
 		return Delivery{}, ctx.Err()
-	case msg := <-ch:
+	case msg, ok := <-ch:
+		if !ok {
+			return Delivery{}, fmt.Errorf("channel closed")
+		}
 		return msg, nil
 	}
 }
@@ -235,7 +241,10 @@ func (s *Server) Serve(ctx context.Context, handler func(Delivery) Publishing) e
 		select {
 		case <-ctx.Done():
 			return nil
-		case msg := <-s.msgs:
+		case msg, ok := <-s.msgs:
+			if !ok {
+				return fmt.Errorf("channel closed")
+			}
 			ret := amqp.Publishing(handler(Delivery(msg)))
 			ret.CorrelationId = msg.CorrelationId
 			if err := s.ch.Publish(msg.Exchange, msg.ReplyTo, false, false, ret); err != nil {
