@@ -3,7 +3,9 @@ package amqp
 import (
 	"context"
 	"fmt"
+	"net"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -58,7 +60,11 @@ type Publishing amqp.Publishing
 type Delivery amqp.Delivery
 
 func NewClient(url string) (*Client, error) {
-	conn, err := amqp.Dial(url)
+	conn, err := amqp.DialConfig(url, amqp.Config{
+		Dial: func(network, addr string) (net.Conn, error) {
+			return net.DialTimeout(network, addr, 10*time.Second)
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
