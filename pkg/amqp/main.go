@@ -236,7 +236,7 @@ func (c *Caller) Call(ctx context.Context, msg Publishing) (Delivery, error) {
 	}
 }
 
-func (s *Server) Serve(ctx context.Context, handler func(Delivery) Publishing) error {
+func (s *Server) Serve(ctx context.Context, handler func(Delivery) (Publishing, error)) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -245,7 +245,13 @@ func (s *Server) Serve(ctx context.Context, handler func(Delivery) Publishing) e
 			if !ok {
 				return fmt.Errorf("channel closed")
 			}
-			ret := amqp.Publishing(handler(Delivery(msg)))
+			m, err := handler(Delivery(msg))
+			if err != nil {
+				msg.Nack(false, true)
+				continue
+			}
+			msg.Ack(false)
+			ret := amqp.Publishing(m)
 			ret.CorrelationId = msg.CorrelationId
 			if err := s.ch.Publish(msg.Exchange, msg.ReplyTo, false, false, ret); err != nil {
 				return err
