@@ -196,7 +196,7 @@ func (c *RPC) Server() (*Server, error) {
 	if err := ch.QueueBind(q.Name, c.key, c.exchange, false, nil); err != nil {
 		return nil, err
 	}
-	msgs, err := ch.Consume(q.Name, "", true, false, false, false, nil)
+	msgs, err := ch.Consume(q.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return nil, err
 	}
