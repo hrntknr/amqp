@@ -247,6 +247,7 @@ func (s *Server) Serve(ctx context.Context, handler func(Delivery) (Publishing, 
 			}
 			m, err := handler(Delivery(msg))
 			if err != nil {
+				fmt.Println(msg.Headers)
 				msg.Nack(false, true)
 				continue
 			}
